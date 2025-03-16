@@ -2085,7 +2085,8 @@ function getCode() {
       .replace(/<\/ul>/g, '  </ul>\n')
       .replace(/<li/g, '\n    <li')
       .replace(/<h([1-6])/g, '\n  <h$1');
-    
+    //  Nettoyage en dehors de la chaîne
+formattedCode = formattedCode.replace(/&nbsp;/g, ' ');
     // Afficher le code dans le popup
     outputCodeElem.value = formattedCode;
     codePopup.classList.add('show');
