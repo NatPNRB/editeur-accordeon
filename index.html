@@ -3253,47 +3253,89 @@
     }
     // Appliquer les correctifs
     applyListFunctionCorrections();
+    
     // Fonction pour ajuster la hauteur des panneaux de manière synchronisée
-    function synchronizePanelsHeight() {
-      // Sélectionner les éléments concernés
-      const sourceContainer = document.querySelector('.source-container');
-      const previewContainer = document.querySelector('.preview-container');
-      const sourceBody = document.querySelector('.source-container .container-body');
-      const previewBody = document.querySelector('.preview-container .container-body');
-      const sourceCode = document.getElementById('sourceCode');
-      if (!sourceContainer || !previewContainer || !sourceBody || !previewBody || !sourceCode) {
-        console.error('Éléments requis non trouvés');
-        return;
-      }
-      // Calculer la hauteur disponible dans la fenêtre
-      const windowHeight = window.innerHeight;
-      const containerTop = sourceContainer.getBoundingClientRect().top;
-      const footerHeight = document.querySelector('.footer')?.offsetHeight || 0;
-      const actionsBarHeight = document.querySelector('.actions-bar')?.offsetHeight || 0;
-      const padding = 40; // Marge supplémentaire
-      // Calculer la hauteur maximale disponible
-      const availableHeight = windowHeight - containerTop - footerHeight - actionsBarHeight - padding;
-      // Définir une hauteur minimale raisonnable
-      const minHeight = 500;
-      const newHeight = Math.max(minHeight, availableHeight);
-      // Appliquer la même hauteur aux deux panneaux
-      sourceBody.style.height = `${newHeight}px`;
-      previewBody.style.height = `${newHeight}px`;
-      sourceCode.style.height = `${newHeight - 30}px`; // Soustraire la hauteur de l'en-tête
-      // Si CodeMirror est actif, ajuster sa hauteur également
+    // Fonction corrigée pour synchroniser les panneaux sans casser l'enregistrement
+function synchronizePanelsHeight() {
+  // Sélectionner les éléments concernés
+  const sourceContainer = document.querySelector('.source-container');
+  const previewContainer = document.querySelector('.preview-container');
+  const sourceBody = document.querySelector('.source-container .container-body');
+  const previewBody = document.querySelector('.preview-container .container-body');
+  
+  if (!sourceContainer || !previewContainer || !sourceBody || !previewBody) {
+    console.error('Éléments requis non trouvés');
+    return;
+  }
+  
+  // Calculer la hauteur disponible dans la fenêtre
+  const windowHeight = window.innerHeight;
+  const containerTop = sourceContainer.getBoundingClientRect().top;
+  const footerHeight = document.querySelector('.footer')?.offsetHeight || 0;
+  const actionsBarHeight = document.querySelector('.actions-bar')?.offsetHeight || 0;
+  const padding = 40; // Marge supplémentaire
+  
+  // Calculer la hauteur maximale disponible
+  const availableHeight = windowHeight - containerTop - footerHeight - actionsBarHeight - padding;
+  
+  // Définir une hauteur minimale raisonnable
+  const minHeight = 500;
+  const newHeight = Math.max(minHeight, availableHeight);
+  
+  // Appliquer la même hauteur aux deux panneaux
+  sourceBody.style.minHeight = `${newHeight}px`;
+  previewBody.style.minHeight = `${newHeight}px`;
+  
+  // S'assurer que les scrollbars apparaissent correctement
+  sourceBody.style.overflow = 'auto';
+  previewBody.style.overflow = 'auto';
+  
+  // Adapter la taille de CodeMirror SANS toucher directement au textarea original
+  // C'est probablement ce qui a cassé l'enregistrement
+  if (window.cmEditor) {
+    window.cmEditor.setSize(null, newHeight - 30);
+    
+    // Forcer un rafraîchissement de CodeMirror
+    setTimeout(function() {
+      window.cmEditor.refresh();
+    }, 50);
+  }
+}
+
+// Fonction pour s'assurer que les modifications sont bien sauvegardées
+function fixSaveFunction() {
+  // Vérifier si la fonction originale existe
+  if (typeof saveChanges === 'function') {
+    // Stocker la fonction originale
+    const originalSaveChanges = saveChanges;
+    
+    // Remplacer la fonction par une version améliorée
+    window.saveChanges = function() {
+      // Synchroniser explicitement CodeMirror avec le textarea si nécessaire
       if (window.cmEditor) {
-        window.cmEditor.setSize(null, newHeight - 30);
+        const sourceCodeElem = document.getElementById('sourceCode');
+        if (sourceCodeElem) {
+          sourceCodeElem.value = window.cmEditor.getValue();
+        }
       }
-      // S'assurer que les scrollbars apparaissent correctement
-      sourceBody.style.overflow = 'auto';
-      previewBody.style.overflow = 'auto';
-    }
-    // Exécuter la fonction au chargement et lors du redimensionnement
-    window.addEventListener('load', synchronizePanelsHeight);
-    window.addEventListener('resize', synchronizePanelsHeight);
-    // Appliquer également après un court délai pour s'assurer que tout est chargé
-    setTimeout(synchronizePanelsHeight, 500);
-    setTimeout(synchronizePanelsHeight, 1000);
+      
+      // Appeler la fonction originale
+      return originalSaveChanges.apply(this, arguments);
+    };
+  }
+}
+
+// Exécuter nos fonctions
+window.addEventListener('load', function() {
+  synchronizePanelsHeight();
+  fixSaveFunction();
+});
+
+window.addEventListener('resize', synchronizePanelsHeight);
+
+// Appliquer également après un court délai pour s'assurer que tout est chargé
+setTimeout(synchronizePanelsHeight, 500);
+setTimeout(synchronizePanelsHeight, 1000);
   </script>
 </body>
 
