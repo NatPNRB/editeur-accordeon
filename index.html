@@ -256,7 +256,6 @@
       background-color: var(--red-warning);
     }
 
-   
     /* Accordéon Styles */
     .accordion-item {
       margin-bottom: 15px;
@@ -448,6 +447,7 @@
     .sub-accordion .accordion-content {
       background-color: #fff !important;
     }
+
     /* Toggle Switch */
     .switch-wrapper {
       display: flex;
@@ -868,6 +868,12 @@
     </div>
 
     <div class="formatting-toolbar" id="formattingToolbar">
+      <button class="btn-tool" id="addSubAccordionBtn" title="Ajouter une sous-section">
+        <i class="fas fa-folder-plus"></i>
+      </button>
+      <button class="btn-tool" id="removeSubAccordionBtn" title="Supprimer la sous-section">
+        <i class="fas fa-folder-minus"></i>
+      </button>
       <button class="btn-tool" id="boldBtn" title="Mettre en gras">
         <i class="fas fa-bold"></i>
       </button>
@@ -887,6 +893,7 @@
         <button class="btn-tool" id="colorPickerBtn" title="Changer la couleur du texte">
           <i class="fas fa-palette"></i>
         </button>
+
         <div class="color-picker-dropdown" id="colorPickerDropdown">
           <div class="color-grid">
             <!-- Couleurs de la charte graphique -->
@@ -966,6 +973,9 @@
     </div>
 
     <div class="actions-bar">
+      <button id="loadConfigurableBtn" class="btn btn-info">
+        <i class="fas fa-layer-group"></i> Charger accordéon avec sous-sections
+      </button>
       <button id="loadPreviewBtn" class="btn btn-primary">
         <i class="fas fa-eye"></i> Prévisualiser
       </button>
@@ -1098,8 +1108,8 @@
       let currentImage = null;
       let currentLink = null;
       // Variables pour le suivi des modifications
-let lastModifiedSource = 'code';
-let pendingChanges = false;
+      let lastModifiedSource = 'code';
+      let pendingChanges = false;
       // Fonction pour encoder/décoder correctement les caractères spéciaux
       function fixEncoding(text) {
         // Convertit les entités HTML en caractères et vice versa
@@ -1164,46 +1174,39 @@ let pendingChanges = false;
         }
         return current;
       }
-
       // Fonction améliorée pour mettre à jour le DOM temporaire
-function updateTempDOM() {
-  if (!tempDOM) tempDOM = document.createElement('div');
-  
-  // Récupérer le contenu complet de la prévisualisation
-  tempDOM.innerHTML = previewAreaElem.innerHTML;
-  
-  // Nettoyer les attributs spécifiques à l'éditeur
-  const elementsToClean = tempDOM.querySelectorAll('[contenteditable], .editable, .edit-focus');
-  elementsToClean.forEach(el => {
-    el.removeAttribute('contenteditable');
-    el.classList.remove('editable', 'edit-focus');
-    
-    // Supprimer complètement l'attribut class s'il est vide
-    if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
-      el.removeAttribute('class');
-    }
-  });
-  
-  // S'assurer que les liens restent cliquables mais sans attributs inutiles
-  const links = tempDOM.querySelectorAll('a');
-  links.forEach(link => {
-    if (link.hasAttribute('class') && !link.getAttribute('class').trim()) {
-      link.removeAttribute('class');
-    }
-    if (!link.hasAttribute('target') || link.getAttribute('target') === '_self') {
-      link.removeAttribute('target');
-    }
-  });
-  
-  // Fusionner et nettoyer les listes si les fonctions sont disponibles
-  if (typeof cleanupMultipleLists === 'function') {
-    tempDOM.innerHTML = cleanupMultipleLists(tempDOM.innerHTML);
-  }
-  
-  if (typeof cleanupListsHTML === 'function') {
-    tempDOM.innerHTML = cleanupListsHTML(tempDOM.innerHTML);
-  }
-}
+      function updateTempDOM() {
+        if (!tempDOM) tempDOM = document.createElement('div');
+        // Récupérer le contenu complet de la prévisualisation
+        tempDOM.innerHTML = previewAreaElem.innerHTML;
+        // Nettoyer les attributs spécifiques à l'éditeur
+        const elementsToClean = tempDOM.querySelectorAll('[contenteditable], .editable, .edit-focus');
+        elementsToClean.forEach(el => {
+          el.removeAttribute('contenteditable');
+          el.classList.remove('editable', 'edit-focus');
+          // Supprimer complètement l'attribut class s'il est vide
+          if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
+            el.removeAttribute('class');
+          }
+        });
+        // S'assurer que les liens restent cliquables mais sans attributs inutiles
+        const links = tempDOM.querySelectorAll('a');
+        links.forEach(link => {
+          if (link.hasAttribute('class') && !link.getAttribute('class').trim()) {
+            link.removeAttribute('class');
+          }
+          if (!link.hasAttribute('target') || link.getAttribute('target') === '_self') {
+            link.removeAttribute('target');
+          }
+        });
+        // Fusionner et nettoyer les listes si les fonctions sont disponibles
+        if (typeof cleanupMultipleLists === 'function') {
+          tempDOM.innerHTML = cleanupMultipleLists(tempDOM.innerHTML);
+        }
+        if (typeof cleanupListsHTML === 'function') {
+          tempDOM.innerHTML = cleanupListsHTML(tempDOM.innerHTML);
+        }
+      }
       // Fonction pour fusionner les listes multiples consécutives
       function cleanupMultipleLists(html) {
         // Créer un élément temporaire
@@ -1375,28 +1378,20 @@ function updateTempDOM() {
         });
       }
       // Activer le mode édition
+      // Activer le mode édition sans ouvrir tous les accordéons
       function enableEditMode() {
         if (!previewAreaElem.innerHTML.trim()) {
           showNotification('Veuillez d\'abord prévisualiser le code', 'error');
           editModeToggle.checked = false;
           return;
         }
-        // Ouvrir tous les accordéons avant d'activer le mode édition
-        const accordionItems = previewAreaElem.querySelectorAll('.accordion-item');
-        accordionItems.forEach(item => {
-          const accordionContent = item.querySelector('.accordion-content');
-          if (accordionContent) {
-            // Ajouter la classe active et afficher le contenu
-            item.classList.add('active');
-            accordionContent.style.display = 'block';
-          }
-        });
+        // NE PAS ouvrir tous les accordéons, mais conserver leur état actuel
         isEditMode = true;
         document.body.classList.add('app-editing');
         formattingToolbar.style.display = 'block';
         editModeIndicator.style.display = 'block';
         makeElementsEditable();
-        showNotification('Mode édition activé - Tous les accordéons ont été ouverts');
+        showNotification('Mode édition activé - L\'état des accordéons a été préservé');
       }
       // Désactiver le mode édition
       function disableEditMode() {
@@ -1891,466 +1886,388 @@ function updateTempDOM() {
         // Afficher le popup
         linkPopup.classList.add('show');
       }
-
-     // Fonction corrigée pour l'application des modifications de lien
-function applyLinkChanges() {
-  const href = document.getElementById('linkHref').value;
-  const text = document.getElementById('linkText').value;
-  const target = document.getElementById('linkTarget').value;
-  
-  if (!href) {
-    return showNotification('L\'URL du lien est requise', 'error');
-  }
-  
-  try {
-    // Ajouter https:// si pas de protocole et pas de lien interne
-    let finalHref = href;
-    if (!href.match(/^(https?|ftp|tel|mailto):/i) && !href.startsWith('#')) {
-      finalHref = 'https://' + href.replace(/^\/\//, '');
-    }
-    
-    // Style par défaut pour les liens
-    const defaultLinkStyle = 'color: #1d3557; font-weight: bold; text-decoration: underline;';
-    
-    // Si on modifie un lien existant
-    if (document.linkToEdit) {
-      document.linkToEdit.setAttribute('href', finalHref);
-      document.linkToEdit.textContent = text;
-      
-      // Appliquer le style par défaut s'il n'y a pas déjà un style
-      if (!document.linkToEdit.hasAttribute('style')) {
-        document.linkToEdit.setAttribute('style', defaultLinkStyle);
-      }
-      
-      if (target === '_blank') {
-        document.linkToEdit.setAttribute('target', '_blank');
-        document.linkToEdit.setAttribute('rel', 'noopener');
-      } else {
-        document.linkToEdit.removeAttribute('target');
-        document.linkToEdit.removeAttribute('rel');
-      }
-    }
-    // Si on crée un nouveau lien à partir d'une sélection
-    else if (document.linkSelectionRange) {
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(document.linkSelectionRange);
-      
-      // Créer le lien
-      const link = document.createElement('a');
-      link.href = finalHref;
-      link.textContent = text;
-      link.setAttribute('style', defaultLinkStyle);
-      
-      if (target === '_blank') {
-        link.target = '_blank';
-        link.rel = 'noopener';
-      }
-      
-      // Extraire la sélection et la remplacer par le lien
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(link);
-      
-      // Rendre le lien éditable
-      link.classList.add('editable');
-      link.contentEditable = true;
-      link.addEventListener('click', function(e) {
-        if (isEditMode) {
-          e.preventDefault();
-          handleEditClick(e);
+      // Fonction corrigée pour l'application des modifications de lien
+      function applyLinkChanges() {
+        const href = document.getElementById('linkHref').value;
+        const text = document.getElementById('linkText').value;
+        const target = document.getElementById('linkTarget').value;
+        if (!href) {
+          return showNotification('L\'URL du lien est requise', 'error');
         }
-      });
-      editableElements.add(link);
-    }
-    
-    // Mettre à jour le DOM temporaire après les modifications
-    updateTempDOM();
-    
-    // Indiquer qu'une modification a été effectuée côté WYSIWYG
-    lastModifiedSource = 'wysiwyg';
-    pendingChanges = true;
-    
-    // Fermer le popup
-    linkPopup.classList.remove('show');
-    document.linkSelectionRange = null;
-    document.linkToEdit = null;
-    
-    showNotification('Lien créé/modifié avec succès');
-  } catch (error) {
-    console.error('Erreur lors de la création/modification du lien:', error);
-    showNotification('Erreur: ' + error.message, 'error');
-  }
-}
+        try {
+          // Ajouter https:// si pas de protocole et pas de lien interne
+          let finalHref = href;
+          if (!href.match(/^(https?|ftp|tel|mailto):/i) && !href.startsWith('#')) {
+            finalHref = 'https://' + href.replace(/^\/\//, '');
+          }
+          // Style par défaut pour les liens
+          const defaultLinkStyle = 'color: #1d3557; font-weight: bold; text-decoration: underline;';
+          // Si on modifie un lien existant
+          if (document.linkToEdit) {
+            document.linkToEdit.setAttribute('href', finalHref);
+            document.linkToEdit.textContent = text;
+            // Appliquer le style par défaut s'il n'y a pas déjà un style
+            if (!document.linkToEdit.hasAttribute('style')) {
+              document.linkToEdit.setAttribute('style', defaultLinkStyle);
+            }
+            if (target === '_blank') {
+              document.linkToEdit.setAttribute('target', '_blank');
+              document.linkToEdit.setAttribute('rel', 'noopener');
+            } else {
+              document.linkToEdit.removeAttribute('target');
+              document.linkToEdit.removeAttribute('rel');
+            }
+          }
+          // Si on crée un nouveau lien à partir d'une sélection
+          else if (document.linkSelectionRange) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(document.linkSelectionRange);
+            // Créer le lien
+            const link = document.createElement('a');
+            link.href = finalHref;
+            link.textContent = text;
+            link.setAttribute('style', defaultLinkStyle);
+            if (target === '_blank') {
+              link.target = '_blank';
+              link.rel = 'noopener';
+            }
+            // Extraire la sélection et la remplacer par le lien
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(link);
+            // Rendre le lien éditable
+            link.classList.add('editable');
+            link.contentEditable = true;
+            link.addEventListener('click', function(e) {
+              if (isEditMode) {
+                e.preventDefault();
+                handleEditClick(e);
+              }
+            });
+            editableElements.add(link);
+          }
+          // Mettre à jour le DOM temporaire après les modifications
+          updateTempDOM();
+          // Indiquer qu'une modification a été effectuée côté WYSIWYG
+          lastModifiedSource = 'wysiwyg';
+          pendingChanges = true;
+          // Fermer le popup
+          linkPopup.classList.remove('show');
+          document.linkSelectionRange = null;
+          document.linkToEdit = null;
+          showNotification('Lien créé/modifié avec succès');
+        } catch (error) {
+          console.error('Erreur lors de la création/modification du lien:', error);
+          showNotification('Erreur: ' + error.message, 'error');
+        }
+      }
       // 1. CORRECTION DE LA FONCTION LOADPREVIEW
-// Cette fonction corrigée assure que les changements de code source sont correctement reflétés dans la prévisualisation
-// Correction pour loadPreview - s'assurer que lastModifiedSource est correctement réinitialisé
-function loadPreview() {
-  // Récupérer le code source
-  let sourceCode = sourceCodeElem.value.trim();
-  
-  // Si CodeMirror est actif, s'assurer que la valeur est bien synchronisée
-  if (window.cmEditor) {
-    sourceCode = window.cmEditor.getValue().trim();
-    sourceCodeElem.value = sourceCode;
-  }
-  
-  if (!sourceCode) {
-    return showNotification('Veuillez entrer du code source', 'error');
-  }
-  
-  // Désactiver temporairement les événements des accordéons
-  const accordionHeaders = previewAreaElem.querySelectorAll('.accordion-header');
-  accordionHeaders.forEach(header => {
-    header.removeEventListener('click', accordionToggleHandler);
-  });
-  
-  // Réinitialiser la prévisualisation
-  previewAreaElem.innerHTML = '';
-  
-  // Créer/mettre à jour le DOM temporaire pour manipuler le code
-  if (!tempDOM) tempDOM = document.createElement('div');
-  tempDOM.innerHTML = sourceCode;
-  
-  // Transférer le contenu dans la prévisualisation
-  previewAreaElem.innerHTML = tempDOM.innerHTML;
-  
-  // Configurer les accordéons
-  setupAccordionToggle();
-  
-  // Si en mode édition, rendre les éléments éditables
-  if (isEditMode) {
-    makeElementsEditable();
-    openAllAccordions();
-  }
-  
-  // IMPORTANT: Après un loadPreview, la dernière source modifiée est le code
-  lastModifiedSource = 'code';
-  pendingChanges = false;
-  
-  showNotification('Prévisualisation chargée avec succès');
-}
-
-// Fonction améliorée pour rendre les éléments éditables
-function makeElementsEditable() {
-  // Effacer d'abord tous les listeners précédents
-  editableElements.forEach(element => {
-    element.removeEventListener('click', handleEditClick);
-    element.contentEditable = false;
-    element.classList.remove('editable', 'edit-focus');
-  });
-  
-  editableElements.clear();
-  
-  // Liste des sélecteurs pour les éléments éditables
-  const selectors = [
-    '.accordion-header span',
-    '.accordion-content p',
-    '.accordion-content li',
-    '.accordion-content h2, .accordion-content h3, .accordion-content h4, .accordion-content h5, .accordion-content h6',
-    '.accordion-content a',
-    '.accordion-content strong',
-    '.accordion-content em', 
-    '.accordion-content span',
-    '.accordion-header img',
-    '.accordion-content img'
-  ];
-  
-  // Sélectionner et configurer tous les éléments éditables
-  selectors.forEach(selector => {
-    const elements = previewAreaElem.querySelectorAll(selector);
-    
-    elements.forEach(element => {
-      // Ajouter la classe editable pour le style
-      element.classList.add('editable');
-      
-      // Différentes configurations selon le type d'élément
-      if (element.tagName === 'IMG') {
-        // Images non éditables directement, mais cliquables pour les modifier
-        element.contentEditable = false;
-        element.addEventListener('click', handleEditClick);
-      } 
-      else if (element.tagName === 'A') {
-        // Pour les liens, empêcher la navigation en mode édition
-        element.contentEditable = true;
-        element.addEventListener('click', function(e) {
-          if (isEditMode) {
-            e.preventDefault();
-            handleEditClick(e);
+      // Cette fonction corrigée assure que les changements de code source sont correctement reflétés dans la prévisualisation
+      // Correction pour loadPreview - s'assurer que lastModifiedSource est correctement réinitialisé
+      function loadPreview() {
+        // Récupérer le code source
+        let sourceCode = sourceCodeElem.value.trim();
+        // Si CodeMirror est actif, s'assurer que la valeur est bien synchronisée
+        if (window.cmEditor) {
+          sourceCode = window.cmEditor.getValue().trim();
+          sourceCodeElem.value = sourceCode;
+        }
+        if (!sourceCode) {
+          return showNotification('Veuillez entrer du code source', 'error');
+        }
+        // Désactiver temporairement les événements des accordéons
+        const accordionHeaders = previewAreaElem.querySelectorAll('.accordion-header');
+        accordionHeaders.forEach(header => {
+          header.removeEventListener('click', accordionToggleHandler);
+        });
+        // Réinitialiser la prévisualisation
+        previewAreaElem.innerHTML = '';
+        // Créer/mettre à jour le DOM temporaire pour manipuler le code
+        if (!tempDOM) tempDOM = document.createElement('div');
+        tempDOM.innerHTML = sourceCode;
+        // Transférer le contenu dans la prévisualisation
+        previewAreaElem.innerHTML = tempDOM.innerHTML;
+        // Configurer les accordéons
+        setupAccordionToggle();
+        // Si en mode édition, rendre les éléments éditables
+        if (isEditMode) {
+          makeElementsEditable();
+          openAllAccordions();
+        }
+        // IMPORTANT: Après un loadPreview, la dernière source modifiée est le code
+        lastModifiedSource = 'code';
+        pendingChanges = false;
+        showNotification('Prévisualisation chargée avec succès');
+      }
+      // Fonction améliorée pour rendre les éléments éditables
+      function makeElementsEditable() {
+        // Effacer d'abord tous les listeners précédents
+        editableElements.forEach(element => {
+          element.removeEventListener('click', handleEditClick);
+          element.contentEditable = false;
+          element.classList.remove('editable', 'edit-focus');
+        });
+        editableElements.clear();
+        // Liste des sélecteurs pour les éléments éditables
+        const selectors = [
+          '.accordion-header span',
+          '.accordion-content p',
+          '.accordion-content li',
+          '.accordion-content h2, .accordion-content h3, .accordion-content h4, .accordion-content h5, .accordion-content h6',
+          '.accordion-content a',
+          '.accordion-content strong',
+          '.accordion-content em',
+          '.accordion-content span',
+          '.accordion-header img',
+          '.accordion-content img'
+        ];
+        // Sélectionner et configurer tous les éléments éditables
+        selectors.forEach(selector => {
+          const elements = previewAreaElem.querySelectorAll(selector);
+          elements.forEach(element => {
+            // Ajouter la classe editable pour le style
+            element.classList.add('editable');
+            // Différentes configurations selon le type d'élément
+            if (element.tagName === 'IMG') {
+              // Images non éditables directement, mais cliquables pour les modifier
+              element.contentEditable = false;
+              element.addEventListener('click', handleEditClick);
+            } else if (element.tagName === 'A') {
+              // Pour les liens, empêcher la navigation en mode édition
+              element.contentEditable = true;
+              element.addEventListener('click', function(e) {
+                if (isEditMode) {
+                  e.preventDefault();
+                  handleEditClick(e);
+                }
+              });
+            } else {
+              // Texte et autres éléments standards
+              element.contentEditable = true;
+              element.addEventListener('click', handleEditClick);
+            }
+            // Ajouter à l'ensemble des éléments éditables
+            editableElements.add(element);
+          });
+        });
+        // S'assurer que les modifications sont bien appliquées
+        setTimeout(() => {
+          editableElements.forEach(element => {
+            if (element.tagName !== 'IMG') {
+              // Vérifier que contentEditable est bien défini
+              if (element.contentEditable !== 'true') {
+                element.contentEditable = true;
+              }
+            }
+          });
+        }, 100);
+      }
+      // Fonction pour ouvrir tous les accordéons
+      function openAllAccordions() {
+        const accordionItems = previewAreaElem.querySelectorAll('.accordion-item');
+        accordionItems.forEach(item => {
+          const content = item.querySelector('.accordion-content');
+          if (content) {
+            item.classList.add('active');
+            content.style.display = 'block';
           }
         });
-      } 
-      else {
-        // Texte et autres éléments standards
-        element.contentEditable = true;
-        element.addEventListener('click', handleEditClick);
+        // S'assurer que les accordéons imbriqués sont également ouverts
+        setTimeout(openNestedAccordions, 100);
       }
-      
-      // Ajouter à l'ensemble des éléments éditables
-      editableElements.add(element);
-    });
-  });
-  
-  // S'assurer que les modifications sont bien appliquées
-  setTimeout(() => {
-    editableElements.forEach(element => {
-      if (element.tagName !== 'IMG') {
-        // Vérifier que contentEditable est bien défini
-        if (element.contentEditable !== 'true') {
-          element.contentEditable = true;
+      // 2. CORRECTION DE LA FONCTION SAVECHANGES
+      // Cette version corrigée s'assure que les modifications sont correctement sauvegardées
+      // Fonction saveChanges améliorée
+      // Correction de la fonction saveChanges pour restaurer l'enregistrement côté code
+      function saveChanges() {
+        try {
+          // Vérifier explicitement quelle interface a été modifiée en dernier
+          const rawCodeHTML = window.cmEditor ? window.cmEditor.getValue().trim() : sourceCodeElem.value.trim();
+          if (lastModifiedSource === 'wysiwyg') {
+            // Si dernière modification côté WYSIWYG, mettre à jour le DOM temporaire
+            updateTempDOM();
+            // Appliquer les modifications du WYSIWYG au code source
+            if (window.cmEditor) {
+              window.cmEditor.setValue(tempDOM.innerHTML);
+            }
+            sourceCodeElem.value = tempDOM.innerHTML;
+          } else if (lastModifiedSource === 'code') {
+            // Si dernière modification côté code, appliquer à la prévisualisation
+            previewAreaElem.innerHTML = rawCodeHTML;
+            // Reconfigurer les accordéons après mise à jour
+            setupAccordionToggle();
+            // Réactiver le mode édition si nécessaire
+            if (isEditMode) {
+              makeElementsEditable();
+              openAllAccordions();
+            }
+          }
+          // Réinitialiser le marqueur de modifications
+          pendingChanges = false;
+          showNotification('Modifications enregistrées avec succès');
+        } catch (err) {
+          console.error('Erreur lors de l\'enregistrement:', err);
+          showNotification('Erreur lors de l\'enregistrement', 'error');
         }
       }
-    });
-  }, 100);
-}
-
-// Fonction pour ouvrir tous les accordéons
-function openAllAccordions() {
-  const accordionItems = previewAreaElem.querySelectorAll('.accordion-item');
-  accordionItems.forEach(item => {
-    const content = item.querySelector('.accordion-content');
-    if (content) {
-      item.classList.add('active');
-      content.style.display = 'block';
-    }
-  });
-  
-  // S'assurer que les accordéons imbriqués sont également ouverts
-  setTimeout(openNestedAccordions, 100);
-}
-    // 2. CORRECTION DE LA FONCTION SAVECHANGES
-// Cette version corrigée s'assure que les modifications sont correctement sauvegardées
-
-
- // Fonction saveChanges améliorée
-// Correction de la fonction saveChanges pour restaurer l'enregistrement côté code
-function saveChanges() {
-  try {
-    // Vérifier explicitement quelle interface a été modifiée en dernier
-    const rawCodeHTML = window.cmEditor ? window.cmEditor.getValue().trim() : sourceCodeElem.value.trim();
-    
-    if (lastModifiedSource === 'wysiwyg') {
-      // Si dernière modification côté WYSIWYG, mettre à jour le DOM temporaire
-      updateTempDOM();
-      
-      // Appliquer les modifications du WYSIWYG au code source
-      if (window.cmEditor) {
-        window.cmEditor.setValue(tempDOM.innerHTML);
-      }
-      sourceCodeElem.value = tempDOM.innerHTML;
-    } 
-    else if (lastModifiedSource === 'code') {
-      // Si dernière modification côté code, appliquer à la prévisualisation
-      previewAreaElem.innerHTML = rawCodeHTML;
-      
-      // Reconfigurer les accordéons après mise à jour
-      setupAccordionToggle();
-      
-      // Réactiver le mode édition si nécessaire
-      if (isEditMode) {
-        makeElementsEditable();
-        openAllAccordions();
-      }
-    }
-    
-    // Réinitialiser le marqueur de modifications
-    pendingChanges = false;
-    
-    showNotification('Modifications enregistrées avec succès');
-  } catch (err) {
-    console.error('Erreur lors de l\'enregistrement:', err);
-    showNotification('Erreur lors de l\'enregistrement', 'error');
-  }
-}
-      
       // 3. CORRECTION DE LA FONCTION GETCODE
-// Cette version corrigée assure que les modifications récentes sont exportées correctement
-
-// Fonction getCode améliorée
-function getCode() {
-  if (!previewAreaElem.innerHTML.trim()) {
-    return showNotification('Veuillez d\'abord prévisualiser le code', 'error');
-  }
-  
-  try {
-    // Utiliser tempDOM s'il est à jour, sinon créer une nouvelle représentation
-    if (lastModifiedSource === 'wysiwyg') {
-      updateTempDOM(); // S'assurer que le DOM temporaire est à jour
-    } else if (lastModifiedSource === 'code') {
-      // Si la dernière modification était dans le code, utiliser cette version
-      if (!tempDOM) tempDOM = document.createElement('div');
-      
-      // Récupérer le code source depuis CodeMirror ou textarea
-      const sourceCode = window.cmEditor ? 
-        window.cmEditor.getValue() : 
-        sourceCodeElem.value;
-        
-      tempDOM.innerHTML = sourceCode;
-    }
-    
-    // Cloner le contenu pour l'export
-    const tempExport = document.createElement('div');
-    tempExport.innerHTML = tempDOM.innerHTML;
-    
-    // Fermer tous les accordéons dans le code exporté
-    const exportAccordionItems = tempExport.querySelectorAll('.accordion-item');
-    exportAccordionItems.forEach(item => {
-      item.classList.remove('active');
-      const content = item.querySelector('.accordion-content');
-      if (content) {
-        content.style.display = 'none';
+      // Cette version corrigée assure que les modifications récentes sont exportées correctement
+      // Fonction getCode améliorée
+      function getCode() {
+        if (!previewAreaElem.innerHTML.trim()) {
+          return showNotification('Veuillez d\'abord prévisualiser le code', 'error');
+        }
+        try {
+          // Utiliser tempDOM s'il est à jour, sinon créer une nouvelle représentation
+          if (lastModifiedSource === 'wysiwyg') {
+            updateTempDOM(); // S'assurer que le DOM temporaire est à jour
+          } else if (lastModifiedSource === 'code') {
+            // Si la dernière modification était dans le code, utiliser cette version
+            if (!tempDOM) tempDOM = document.createElement('div');
+            // Récupérer le code source depuis CodeMirror ou textarea
+            const sourceCode = window.cmEditor ?
+              window.cmEditor.getValue() :
+              sourceCodeElem.value;
+            tempDOM.innerHTML = sourceCode;
+          }
+          // Cloner le contenu pour l'export
+          const tempExport = document.createElement('div');
+          tempExport.innerHTML = tempDOM.innerHTML;
+          // Fermer tous les accordéons dans le code exporté
+          const exportAccordionItems = tempExport.querySelectorAll('.accordion-item');
+          exportAccordionItems.forEach(item => {
+            item.classList.remove('active');
+            const content = item.querySelector('.accordion-content');
+            if (content) {
+              content.style.display = 'none';
+            }
+          });
+          // Nettoyer les attributs d'édition
+          const elementsToClean = tempExport.querySelectorAll('*');
+          elementsToClean.forEach(el => {
+            el.removeAttribute('contenteditable');
+            el.classList.remove('editable', 'edit-focus');
+            if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
+              el.removeAttribute('class');
+            }
+          });
+          // Améliorer la lisibilité avec des sauts de ligne
+          let formattedCode = tempExport.innerHTML
+            .replace(/<div/g, '\n<div')
+            .replace(/<\/div>/g, '</div>\n')
+            .replace(/<p/g, '\n  <p')
+            .replace(/<ul/g, '\n  <ul')
+            .replace(/<\/ul>/g, '  </ul>\n')
+            .replace(/<li/g, '\n    <li')
+            .replace(/<h([1-6])/g, '\n  <h$1');
+          //  Nettoyage en dehors de la chaîne
+          formattedCode = formattedCode.replace(/&nbsp;/g, ' ');
+          // Afficher le code dans le popup
+          outputCodeElem.value = formattedCode;
+          codePopup.classList.add('show');
+        } catch (error) {
+          console.error('Erreur lors de la génération du code:', error);
+          showNotification('Erreur lors de la génération du code', 'error');
+          // Fallback simple en cas d'erreur
+          outputCodeElem.value = previewAreaElem.innerHTML;
+          codePopup.classList.add('show');
+        }
       }
-    });
-    
-    // Nettoyer les attributs d'édition
-    const elementsToClean = tempExport.querySelectorAll('*');
-    elementsToClean.forEach(el => {
-      el.removeAttribute('contenteditable');
-      el.classList.remove('editable', 'edit-focus');
-      if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
-        el.removeAttribute('class');
-      }
-    });
-    
-    // Améliorer la lisibilité avec des sauts de ligne
-    let formattedCode = tempExport.innerHTML
-      .replace(/<div/g, '\n<div')
-      .replace(/<\/div>/g, '</div>\n')
-      .replace(/<p/g, '\n  <p')
-      .replace(/<ul/g, '\n  <ul')
-      .replace(/<\/ul>/g, '  </ul>\n')
-      .replace(/<li/g, '\n    <li')
-      .replace(/<h([1-6])/g, '\n  <h$1');
-    //  Nettoyage en dehors de la chaîne
-formattedCode = formattedCode.replace(/&nbsp;/g, ' ');
-    // Afficher le code dans le popup
-    outputCodeElem.value = formattedCode;
-    codePopup.classList.add('show');
-  } catch (error) {
-    console.error('Erreur lors de la génération du code:', error);
-    showNotification('Erreur lors de la génération du code', 'error');
-    
-    // Fallback simple en cas d'erreur
-    outputCodeElem.value = previewAreaElem.innerHTML;
-    codePopup.classList.add('show');
-  }
-}
       // Copier le code dans le presse-papier
       function copyCode() {
         outputCodeElem.select();
         document.execCommand('copy');
         showNotification('Code copié dans le presse-papier');
       }
-      
-       // 4. AMÉLIORATION DU REDIMENSIONNEMENT DES PANNEAUX
-// Cette version corrigée assure un dimensionnement équilibré des panneaux
-
-function setupResizablePanels() {
-  const container = document.querySelector('.editor-container');
-  const sourcePanel = document.querySelector('.source-container');
-  const previewPanel = document.querySelector('.preview-container');
-  const resizer = document.getElementById('panelResizer');
-  
-  // Vérifier que tous les éléments existent
-  if (!container || !sourcePanel || !previewPanel || !resizer) return;
-  
-  // Variables pour le redimensionnement
-  let isResizing = false;
-  let startX, startWidth;
-  
-  // Gérer le début du redimensionnement
-  resizer.addEventListener('mousedown', (e) => {
-    isResizing = true;
-    startX = e.clientX;
-    startWidth = sourcePanel.offsetWidth;
-    
-    // Ajouter une classe active pour le style
-    resizer.classList.add('active');
-    
-    // Empêcher la sélection de texte pendant le redimensionnement
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-  });
-  
-  // Gérer le redimensionnement en cours
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizing) return;
-    
-    // Calculer la nouvelle largeur
-    const containerWidth = container.offsetWidth;
-    const delta = e.clientX - startX;
-    let newWidth = startWidth + delta;
-    
-    // Limites plus équilibrées: entre 30% et 70% de la largeur du conteneur
-    const minWidth = containerWidth * 0.3;
-    const maxWidth = containerWidth * 0.7;
-    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
-    
-    // Appliquer la nouvelle largeur
-    sourcePanel.style.width = `${newWidth}px`;
-    sourcePanel.style.flex = '0 0 auto';
-    
-    // Mettre à jour l'éditeur de code si nécessaire
-    if (window.cmEditor) {
-      window.cmEditor.refresh();
-    }
-  });
-  
-  // Gérer la fin du redimensionnement
-  document.addEventListener('mouseup', () => {
-    if (isResizing) {
-      isResizing = false;
-      resizer.classList.remove('active');
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-      
-      // Rafraîchir CodeMirror pour s'assurer qu'il s'adapte correctement
-      if (window.cmEditor) {
-        setTimeout(() => window.cmEditor.refresh(), 100);
+      // 4. AMÉLIORATION DU REDIMENSIONNEMENT DES PANNEAUX
+      // Cette version corrigée assure un dimensionnement équilibré des panneaux
+      function setupResizablePanels() {
+        const container = document.querySelector('.editor-container');
+        const sourcePanel = document.querySelector('.source-container');
+        const previewPanel = document.querySelector('.preview-container');
+        const resizer = document.getElementById('panelResizer');
+        // Vérifier que tous les éléments existent
+        if (!container || !sourcePanel || !previewPanel || !resizer) return;
+        // Variables pour le redimensionnement
+        let isResizing = false;
+        let startX, startWidth;
+        // Gérer le début du redimensionnement
+        resizer.addEventListener('mousedown', (e) => {
+          isResizing = true;
+          startX = e.clientX;
+          startWidth = sourcePanel.offsetWidth;
+          // Ajouter une classe active pour le style
+          resizer.classList.add('active');
+          // Empêcher la sélection de texte pendant le redimensionnement
+          document.body.style.userSelect = 'none';
+          document.body.style.cursor = 'col-resize';
+        });
+        // Gérer le redimensionnement en cours
+        document.addEventListener('mousemove', (e) => {
+          if (!isResizing) return;
+          // Calculer la nouvelle largeur
+          const containerWidth = container.offsetWidth;
+          const delta = e.clientX - startX;
+          let newWidth = startWidth + delta;
+          // Limites plus équilibrées: entre 30% et 70% de la largeur du conteneur
+          const minWidth = containerWidth * 0.3;
+          const maxWidth = containerWidth * 0.7;
+          newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+          // Appliquer la nouvelle largeur
+          sourcePanel.style.width = `${newWidth}px`;
+          sourcePanel.style.flex = '0 0 auto';
+          // Mettre à jour l'éditeur de code si nécessaire
+          if (window.cmEditor) {
+            window.cmEditor.refresh();
+          }
+        });
+        // Gérer la fin du redimensionnement
+        document.addEventListener('mouseup', () => {
+          if (isResizing) {
+            isResizing = false;
+            resizer.classList.remove('active');
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            // Rafraîchir CodeMirror pour s'assurer qu'il s'adapte correctement
+            if (window.cmEditor) {
+              setTimeout(() => window.cmEditor.refresh(), 100);
+            }
+          }
+        });
+        // Initialisation des panneaux avec des proportions plus équilibrées
+        function initializePanels() {
+          setTimeout(() => {
+            // Par défaut, les panneaux ont la même taille (50/50)
+            const totalWidth = container.clientWidth;
+            const halfWidth = Math.floor(totalWidth / 2);
+            sourcePanel.style.width = `${halfWidth}px`;
+            sourcePanel.style.flex = '0 0 auto';
+            // Rafraîchir CodeMirror après l'initialisation
+            if (window.cmEditor) {
+              window.cmEditor.refresh();
+            }
+          }, 100);
+        }
+        // Initialiser les panneaux
+        initializePanels();
+        // Réinitialiser lors du redimensionnement de la fenêtre
+        window.addEventListener('resize', () => {
+          // Maintenir le ratio actuel
+          const containerWidth = container.clientWidth;
+          const sourceWidth = sourcePanel.offsetWidth;
+          // Calculer un ratio plus équilibré
+          let ratio = sourceWidth / (containerWidth - resizer.offsetWidth);
+          ratio = Math.max(0.3, Math.min(ratio, 0.7)); // Limiter le ratio entre 30% et 70%
+          // Appliquer le ratio à la nouvelle taille
+          const newSourceWidth = Math.floor(containerWidth * ratio);
+          sourcePanel.style.width = `${newSourceWidth}px`;
+          // Rafraîchir CodeMirror
+          if (window.cmEditor) {
+            setTimeout(() => window.cmEditor.refresh(), 100);
+          }
+        });
       }
-    }
-  });
-  
-  // Initialisation des panneaux avec des proportions plus équilibrées
-  function initializePanels() {
-    setTimeout(() => {
-      // Par défaut, les panneaux ont la même taille (50/50)
-      const totalWidth = container.clientWidth;
-      const halfWidth = Math.floor(totalWidth / 2);
-      
-      sourcePanel.style.width = `${halfWidth}px`;
-      sourcePanel.style.flex = '0 0 auto';
-      
-      // Rafraîchir CodeMirror après l'initialisation
-      if (window.cmEditor) {
-        window.cmEditor.refresh();
-      }
-    }, 100);
-  }
-  
-  // Initialiser les panneaux
-  initializePanels();
-  
-  // Réinitialiser lors du redimensionnement de la fenêtre
-  window.addEventListener('resize', () => {
-    // Maintenir le ratio actuel
-    const containerWidth = container.clientWidth;
-    const sourceWidth = sourcePanel.offsetWidth;
-    
-    // Calculer un ratio plus équilibré
-    let ratio = sourceWidth / (containerWidth - resizer.offsetWidth);
-    ratio = Math.max(0.3, Math.min(ratio, 0.7)); // Limiter le ratio entre 30% et 70%
-    
-    // Appliquer le ratio à la nouvelle taille
-    const newSourceWidth = Math.floor(containerWidth * ratio);
-    sourcePanel.style.width = `${newSourceWidth}px`;
-    
-    // Rafraîchir CodeMirror
-    if (window.cmEditor) {
-      setTimeout(() => window.cmEditor.refresh(), 100);
-    }
-  });
-}
       // Cette fonction est une version simplifiée et plus robuste pour colorer le code
       function applySyntaxHighlighting() {
         const sourceCode = document.getElementById('sourceCode');
@@ -2609,124 +2526,316 @@ function setupResizablePanels() {
           blocksDropdown.classList.remove('show');
         });
       });
-     // Correction du problème de détection pour CodeMirror
-function fixCodeMirrorTracking() {
-  // S'assurer que CodeMirror génère des événements de modification
-  if (window.cmEditor) {
-    // Supprimer d'anciens écouteurs pour éviter les doublons
-    window.cmEditor.off('change');
-    
-    // Ajouter un nouvel écouteur qui marque explicitement la source comme "code"
-    window.cmEditor.on('change', () => {
-      console.log('CodeMirror change détecté');
-      lastModifiedSource = 'code';
-      pendingChanges = true;
-    });
-    
-    // Activer le tracking
-    window.cmEditor._lastSourceTracking = true;
-  }
-} 
+      // Correction du problème de détection pour CodeMirror
+      function fixCodeMirrorTracking() {
+        // S'assurer que CodeMirror génère des événements de modification
+        if (window.cmEditor) {
+          // Supprimer d'anciens écouteurs pour éviter les doublons
+          window.cmEditor.off('change');
+          // Ajouter un nouvel écouteur qui marque explicitement la source comme "code"
+          window.cmEditor.on('change', () => {
+            console.log('CodeMirror change détecté');
+            lastModifiedSource = 'code';
+            pendingChanges = true;
+          });
+          // Activer le tracking
+          window.cmEditor._lastSourceTracking = true;
+        }
+      }
       // Configurer le suivi des modifications pour les deux modes d'édition
-function setupEditTracking() {
-  sourceCodeElem.addEventListener('input', () => {
-    lastModifiedSource = 'code';
-    pendingChanges = true;
-  });
-  
-  // Observer les modifications dans la zone de prévisualisation
-  const previewObserver = new MutationObserver(() => {
-    if (isEditMode) {
-      lastModifiedSource = 'wysiwyg';
-      pendingChanges = true;
-      
-      // Mise à jour du DOM temporaire lors des modifications WYSIWYG
-      updateTempDOM();
-    }
-  });
-  
-  // Observer tous les changements de contenu et d'attributs
-  previewObserver.observe(previewAreaElem, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-    attributes: true,
-    attributeFilter: ['style', 'src', 'href', 'alt']
-  });
-  
-  // Suivre les modifications dans CodeMirror si disponible
-  if (window.cmEditor && !window.cmEditor._lastSourceTracking) {
-    window.cmEditor.on('change', () => {
-      lastModifiedSource = 'code';
-      pendingChanges = true;
-    });
-    window.cmEditor._lastSourceTracking = true;
-  }
-}
-      
-      
+      function setupEditTracking() {
+        sourceCodeElem.addEventListener('input', () => {
+          lastModifiedSource = 'code';
+          pendingChanges = true;
+        });
+        // Observer les modifications dans la zone de prévisualisation
+        const previewObserver = new MutationObserver(() => {
+          if (isEditMode) {
+            lastModifiedSource = 'wysiwyg';
+            pendingChanges = true;
+            // Mise à jour du DOM temporaire lors des modifications WYSIWYG
+            updateTempDOM();
+          }
+        });
+        // Observer tous les changements de contenu et d'attributs
+        previewObserver.observe(previewAreaElem, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ['style', 'src', 'href', 'alt']
+        });
+        // Suivre les modifications dans CodeMirror si disponible
+        if (window.cmEditor && !window.cmEditor._lastSourceTracking) {
+          window.cmEditor.on('change', () => {
+            lastModifiedSource = 'code';
+            pendingChanges = true;
+          });
+          window.cmEditor._lastSourceTracking = true;
+        }
+      }
       // Fonction pour améliorer toutes les fonctions d'édition
-function attachEditFunctionUpdates() {
-  // Liste des fonctions d'édition à améliorer
-  const editFunctions = [
-    'makeBold', 
-    'changeColor', 
-    'addList', 
-    'convertTextToList', 
-    'addItemToList', 
-    'removeListItem', 
-    'removeBlock',
-    'addBlock', 
-    'applyImageChanges'
-  ];
-  
-  // Pour chaque fonction, ajouter le marquage des modifications
-  editFunctions.forEach(functionName => {
-    if (typeof window[functionName] === 'function') {
-      const originalFunction = window[functionName];
+      function attachEditFunctionUpdates() {
+        // Liste des fonctions d'édition à améliorer
+        const editFunctions = [
+          'makeBold',
+          'changeColor',
+          'addList',
+          'convertTextToList',
+          'addItemToList',
+          'removeListItem',
+          'removeBlock',
+          'addBlock',
+          'applyImageChanges'
+        ];
+        // Pour chaque fonction, ajouter le marquage des modifications
+        editFunctions.forEach(functionName => {
+          if (typeof window[functionName] === 'function') {
+            const originalFunction = window[functionName];
+            window[functionName] = function() {
+              // Exécuter la fonction originale
+              const result = originalFunction.apply(this, arguments);
+              // Marquer comme modifié côté WYSIWYG
+              lastModifiedSource = 'wysiwyg';
+              pendingChanges = true;
+              // Mettre à jour le DOM temporaire
+              updateTempDOM();
+              return result;
+            };
+          }
+        });
+      }
+      // Fonction d'initialisation principale
+      // Template d'accordéon avec sous-accordéons
+      const configurableAccordionTemplate = `<div class="accordion" style="margin-top: 20px;">
+  <!-- Section principale -->
+  <div class="accordion-item">
+    <div class="accordion-header">
+      <img src="https://parcdesbauges.com/wp-content/uploads/2025/01/sortirsentiers.png" alt="Pictogramme principal">
+      <span>Titre de l'accordéon principal</span>
+    </div>
+    <div class="accordion-content" style="display: none;">
       
-      window[functionName] = function() {
-        // Exécuter la fonction originale
-        const result = originalFunction.apply(this, arguments);
-        
+      <p>Texte d'introduction de l'accordéon principal</p>
+      
+      <!-- Texte d'introduction avant la sous-section 1 -->
+      <p>Texte d'introduction avant la sous-section 1. Cette introduction explique brièvement ce que l'utilisateur va trouver dans cette sous-section.</p>
+      
+      <!-- Sous-section 1 -->
+      <div class="accordion-item sub-accordion">
+        <div class="accordion-header">
+          <span>Sous-titre 1</span>
+        </div>
+        <div class="accordion-content" style="display: none;">
+          <p>Contenu de la sous-section 1</p>
+          
+          <ul>
+            <li>Premier élément de la liste</li>
+            <li>Deuxième élément de la liste</li>
+            <li>Troisième élément avec un <a href="https://parcdesbauges.com/" target="_blank" style="color: #1d3557; font-weight: bold; text-decoration: underline;">lien cliquable</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Texte d'introduction avant la sous-section 2 -->
+      <p>Texte d'introduction avant la sous-section 2. Cette introduction peut contenir du <strong>texte mis en forme</strong> et expliquer le contexte de cette partie.</p>
+      
+      <!-- Sous-section 2 -->
+      <div class="accordion-item sub-accordion">
+        <div class="accordion-header">
+          <span>Sous-titre 2</span>
+        </div>
+        <div class="accordion-content" style="display: none;">
+          <img src="https://parcdesbauges.com/wp-content/uploads/2024/12/zone_sensible_small.jpg" alt="Image exemple" style="width: 200px; height: auto; float: left; margin: 10px 20px 10px 0;">
+          
+          <p>Contenu de la sous-section 2 avec une image flottante</p>
+          
+          <p>Paragraphe supplémentaire avec du <strong>texte en gras</strong> et du <span style="color: #b6735c;">texte coloré</span>.</p>
+          
+          <h3 style="font-family: 'Open Sans', sans-serif; font-weight: 800; font-size: 16px; line-height: 1.5; color: #000;text-transform: uppercase;">
+            Titre de section
+          </h3>
+          
+          <ul>
+            <li><p><strong>Point important 1</strong> avec explication détaillée</p></li>
+            <li><p><strong>Point important 2</strong> avec explication détaillée</p></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+      /**
+       * Fonctions pour gérer les accordéons configurables
+       */
+      // Fonction pour charger l'accordéon configurable
+      function loadConfigurableAccordion() {
+        // Insérer le template dans la zone de code source
+        sourceCodeElem.value = configurableAccordionTemplate;
+        // Si CodeMirror est actif, mettre à jour son contenu
+        if (window.cmEditor) {
+          window.cmEditor.setValue(configurableAccordionTemplate);
+        }
+        // Charger immédiatement la prévisualisation
+        loadPreview();
+        // Si en mode édition, rendre les éléments éditables et ouvrir tous les accordéons
+        if (isEditMode) {
+          makeElementsEditable();
+          openAllAccordions();
+          // S'assurer que les accordéons imbriqués sont également ouverts
+          setTimeout(openNestedAccordions, 100);
+        }
+        // Notification à l'utilisateur
+        showNotification('Accordéon configurable chargé avec succès');
+      }
+      // Fonction pour ajouter une sous-section à l'accordéon
+      // Remplacer la fonction addSubAccordion existante
+      function addSubAccordion() {
+        if (!isEditMode) {
+          return showNotification('Veuillez activer le mode édition', 'error');
+        }
+        // Vérifier si on est dans un accordéon principal
+        const mainAccordionContent = currentEditingElement ?
+          currentEditingElement.closest('.accordion-content:not(.sub-accordion .accordion-content)') : null;
+        if (!mainAccordionContent) {
+          return showNotification('Veuillez sélectionner un élément dans l\'accordéon principal', 'error');
+        }
+        // Créer un texte d'introduction avant la sous-section
+        const introText = document.createElement('p');
+        introText.textContent = 'Texte d\'introduction pour la nouvelle sous-section';
+        introText.classList.add('editable');
+        introText.contentEditable = true;
+        // Créer une nouvelle sous-section avec un paragraphe bien formaté
+        const subAccordion = document.createElement('div');
+        subAccordion.className = 'accordion-item sub-accordion';
+        subAccordion.innerHTML = `
+    <div class="accordion-header">
+      <span>Nouvelle sous-section</span>
+    </div>
+    <div class="accordion-content" style="display: none;">
+      <p>Contenu de la nouvelle sous-section</p>
+    </div>
+  `;
+        // Ajouter d'abord le texte d'introduction, puis la sous-section
+        mainAccordionContent.appendChild(introText);
+        mainAccordionContent.appendChild(subAccordion);
+        // Configurer les événements d'accordéon
+        setupAccordionToggle();
+        // Ajouter le gestionnaire d'événement pour le texte d'introduction
+        introText.addEventListener('click', handleEditClick);
+        editableElements.add(introText);
+        // Rendre les éléments de la sous-section éditables
+        const headerSpan = subAccordion.querySelector('.accordion-header span');
+        if (headerSpan) {
+          headerSpan.classList.add('editable');
+          headerSpan.contentEditable = true;
+          headerSpan.addEventListener('click', handleEditClick);
+          editableElements.add(headerSpan);
+        }
+        const paragraphs = subAccordion.querySelectorAll('.accordion-content p');
+        paragraphs.forEach(p => {
+          p.classList.add('editable');
+          p.contentEditable = true;
+          p.addEventListener('click', handleEditClick);
+          editableElements.add(p);
+        });
+        // Ouvrir le nouvel accordéon
+        const accordionContent = subAccordion.querySelector('.accordion-content');
+        subAccordion.classList.add('active');
+        accordionContent.style.display = 'block';
+        // Mettre à jour le DOM temporaire
+        updateTempDOM();
         // Marquer comme modifié côté WYSIWYG
         lastModifiedSource = 'wysiwyg';
         pendingChanges = true;
-        
-        // Mettre à jour le DOM temporaire
-        updateTempDOM();
-        
-        return result;
-      };
-    }
-  });
-}
-      // Fonction d'initialisation principale
-   // Corriger la fonction d'initialisation pour appliquer les correctifs
-function initializeEditor() {
-  // Configuration des panneaux redimensionnables
-  setupResizablePanels();
-  
-  // Appliquer la coloration syntaxique
-  applySyntaxHighlighting();
-  
-  // Configurer le suivi des modifications
-  setupEditTracking();
-  
-  // Correction pour CodeMirror
-  setTimeout(fixCodeMirrorTracking, 500);
-  
-  // Améliorer les fonctions d'édition
-  attachEditFunctionUpdates();
-   // Ajouter un avertissement avant de quitter si des modifications sont en attente
-  window.addEventListener('beforeunload', function(e) {
-    if (pendingChanges) {
-      const message = 'Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter?';
-      e.returnValue = message;
-      return message;
-    }
-  });
-}
+        showNotification('Sous-section ajoutée avec succès');
+      }
+      // Remplacer l'écouteur d'événement du bouton
+      document.addEventListener('DOMContentLoaded', function() {
+        const addSubAccordionBtn = document.getElementById('addSubAccordionBtn');
+        if (addSubAccordionBtn) {
+          // Supprimer les anciens écouteurs
+          const newBtn = addSubAccordionBtn.cloneNode(true);
+          addSubAccordionBtn.parentNode.replaceChild(newBtn, addSubAccordionBtn);
+          // Ajouter le nouvel écouteur
+          newBtn.addEventListener('click', addSubAccordion);
+        }
+      });
+      // Fonction pour supprimer une sous-section
+      function removeSubAccordion() {
+        if (!isEditMode) {
+          return showNotification('Veuillez activer le mode édition', 'error');
+        }
+        // Vérifier si l'élément sélectionné fait partie d'une sous-section
+        const subAccordion = currentEditingElement ?
+          currentEditingElement.closest('.sub-accordion') : null;
+        if (!subAccordion) {
+          return showNotification('Veuillez sélectionner un élément dans une sous-section', 'error');
+        }
+        // Demander confirmation
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette sous-section ?')) {
+          // Supprimer tous les éléments éditables contenus dans la sous-section
+          const editableElems = subAccordion.querySelectorAll('.editable');
+          editableElems.forEach(el => window.editableElements.delete(el));
+          // Chercher le texte d'introduction qui précède cette sous-section
+          let introText = subAccordion.previousElementSibling;
+          // Vérifier que c'est bien un paragraphe (texte d'introduction)
+          if (introText && introText.tagName === 'P') {
+            // Supprimer aussi le texte d'introduction
+            if (introText.classList.contains('editable')) {
+              window.editableElements.delete(introText);
+            }
+            introText.remove();
+          }
+          // Supprimer la sous-section
+          subAccordion.remove();
+          // Réinitialiser l'élément actuel si nécessaire
+          if (currentEditingElement && !document.body.contains(currentEditingElement)) {
+            currentEditingElement = null;
+          }
+          // Mettre à jour le DOM temporaire
+          updateTempDOM();
+          // Marquer comme modifié côté WYSIWYG
+          lastModifiedSource = 'wysiwyg';
+          pendingChanges = true;
+          showNotification('Sous-section et son texte d\'introduction supprimés avec succès');
+        }
+      }
+      // Gestionnaires d'événements pour les accordéons configurables
+      const loadConfigurableBtn = document.getElementById('loadConfigurableBtn');
+      const addSubAccordionBtn = document.getElementById('addSubAccordionBtn');
+      const removeSubAccordionBtn = document.getElementById('removeSubAccordionBtn');
+      if (loadConfigurableBtn) {
+        loadConfigurableBtn.addEventListener('click', loadConfigurableAccordion);
+      }
+      if (addSubAccordionBtn) {
+        addSubAccordionBtn.addEventListener('click', addSubAccordion);
+      }
+      if (removeSubAccordionBtn) {
+        removeSubAccordionBtn.addEventListener('click', removeSubAccordion);
+      }
+      // Corriger la fonction d'initialisation pour appliquer les correctifs
+      function initializeEditor() {
+        // Configuration des panneaux redimensionnables
+        setupResizablePanels();
+        // Appliquer la coloration syntaxique
+        applySyntaxHighlighting();
+        // Configurer le suivi des modifications
+        setupEditTracking();
+        // Correction pour CodeMirror
+        setTimeout(fixCodeMirrorTracking, 500);
+        // Améliorer les fonctions d'édition
+        attachEditFunctionUpdates();
+        // Ajouter un avertissement avant de quitter si des modifications sont en attente
+        window.addEventListener('beforeunload', function(e) {
+          if (pendingChanges) {
+            const message = 'Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter?';
+            e.returnValue = message;
+            return message;
+          }
+        });
+      }
       // Charger un accordéon générique par défaut
       sourceCodeElem.value = `<div class="accordion" style="margin-top: 20px;">
   <div class="accordion-item">
@@ -2772,461 +2881,419 @@ function initializeEditor() {
       // Charger automatiquement la prévisualisation
       loadPreview();
     });
-    
     /**
- * Corrections pour l'éditeur d'accordéon WordPress
- * 
- * Ce script contient les fonctions corrigées pour résoudre les problèmes
- * de manipulation des listes à puces dans l'éditeur d'accordéon.
- */
-
-// 1. SIMPLIFICATION DE LA BARRE D'OUTILS
-// Cette modification supprime le bouton de liste redondant 
-// et conserve uniquement l'option dans le menu déroulant
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Supprimer le bouton de liste redondant
-  const listBtn = document.getElementById('listBtn');
-  if (listBtn) {
-    listBtn.style.display = 'none';
-  }
-  
-  // Si besoin, aussi dissimuler les boutons associés aux listes
-  // qui ne sont pas nécessaires en accès rapide
-  const addItemBtn = document.getElementById('addItemBtn');
-  const removeItemBtn = document.getElementById('removeItemBtn');
-  if (addItemBtn && removeItemBtn) {
-    addItemBtn.style.display = 'none';
-    removeItemBtn.style.display = 'none';
-  }
-});
-
-// 2. CORRECTION DE LA FONCTION D'AJOUT DE LISTE
-// Cette version corrigée assure que la liste est correctement insérée 
-// dans le contenu de l'accordéon et que le DOM temporaire est mis à jour
-
-function addList() {
-  if (!isEditMode || !currentEditingElement) {
-    return showNotification('Veuillez sélectionner un élément éditable', 'error');
-  }
-  
-  // Trouver le conteneur approprié pour ajouter la liste
-  let container = currentEditingElement;
-  
-  // Si l'élément actuel n'est pas dans le contenu de l'accordéon,
-  // rechercher le conteneur de contenu d'accordéon le plus proche
-  if (!container.closest('.accordion-content')) {
-    container = container.closest('.accordion-item')?.querySelector('.accordion-content');
-    if (!container) {
-      return showNotification('Impossible de trouver un conteneur valide pour la liste', 'error');
-    }
-  }
-  
-  // Créer une liste à puces avec un élément initial
-  const ul = document.createElement('ul');
-  ul.className = 'editable-list'; // Classe pour identifier facilement les listes éditables
-  
-  // Créer le premier élément de liste
-  const li = document.createElement('li');
-  li.textContent = 'Nouvel élément';
-  li.classList.add('editable');
-  li.contentEditable = true;
-  ul.appendChild(li);
-  
-  // Insérer la liste après l'élément actuel ou à la fin du contenu de l'accordéon
-  if (container.classList.contains('accordion-content')) {
-    // Ajouter à la fin du conteneur de contenu
-    container.appendChild(ul);
-  } else {
-    // Insérer après l'élément sélectionné
-    container.insertAdjacentElement('afterend', ul);
-  }
-  
-  // Rendre tous les éléments de liste éditables
-  li.addEventListener('click', handleEditClick);
-  editableElements.add(li);
-  
-  // Sélectionner le nouvel élément
-  if (currentEditingElement) {
-    currentEditingElement.classList.remove('edit-focus');
-  }
-  currentEditingElement = li;
-  li.classList.add('edit-focus');
-  li.focus();
-  
-  // Mettre à jour le DOM temporaire
-  updateTempDOM();
-  
-  // Marquer comme modification WYSIWYG
-  lastModifiedSource = 'wysiwyg';
-  pendingChanges = true;
-  
-  showNotification('Liste à puces ajoutée');
-}
-
-// 3. CORRECTION DE LA FONCTION D'AJOUT D'ÉLÉMENT DE LISTE
-// Cette version corrigée assure que les nouveaux éléments sont correctement
-// intégrés à la liste existante
-
-function addItemToList() {
-  if (!isEditMode || !currentEditingElement) {
-    return showNotification('Veuillez sélectionner un élément de liste', 'error');
-  }
-  
-  // Vérifier si l'élément actuel est une liste ou un élément de liste
-  let li = null;
-  let ul = null;
-  
-  if (currentEditingElement.nodeName === 'LI') {
-    // Si l'élément actuel est déjà un élément de liste
-    li = currentEditingElement;
-    ul = li.parentElement;
-  } else if (currentEditingElement.closest('li')) {
-    // Si l'élément actuel est à l'intérieur d'un élément de liste
-    li = currentEditingElement.closest('li');
-    ul = li.parentElement;
-  } else if (currentEditingElement.nodeName === 'UL' || currentEditingElement.nodeName === 'OL') {
-    // Si l'élément actuel est la liste elle-même
-    ul = currentEditingElement;
-    li = ul.lastElementChild; // Ajouter après le dernier élément
-  } else {
-    return showNotification('Veuillez sélectionner un élément de liste', 'error');
-  }
-  
-  if (!ul) return;
-  
-  // Créer un nouvel élément de liste
-  const newLi = document.createElement('li');
-  newLi.textContent = 'Nouvel élément';
-  
-  // Insérer le nouvel élément après l'élément sélectionné ou à la fin
-  if (li && li.nextSibling) {
-    ul.insertBefore(newLi, li.nextSibling);
-  } else {
-    ul.appendChild(newLi);
-  }
-  
-  // Rendre le nouvel élément éditable
-  newLi.classList.add('editable');
-  newLi.contentEditable = true;
-  newLi.addEventListener('click', handleEditClick);
-  editableElements.add(newLi);
-  
-  // Sélectionner le nouvel élément
-  if (currentEditingElement) {
-    currentEditingElement.classList.remove('edit-focus');
-  }
-  currentEditingElement = newLi;
-  newLi.classList.add('edit-focus');
-  newLi.focus();
-  
-  // Mettre à jour le DOM temporaire
-  updateTempDOM();
-  
-  // Marquer comme modification WYSIWYG
-  lastModifiedSource = 'wysiwyg';
-  pendingChanges = true;
-  
-  showNotification('Élément ajouté à la liste');
-}
-
-// 4. CORRECTION DE LA FONCTION CONVERTISSANT LE TEXTE EN LISTE
-// Cette version corrigée assure que le texte sélectionné est correctement
-// transformé en liste à puces
-
-function convertTextToList() {
-  if (!isEditMode) {
-    return showNotification('Veuillez activer le mode édition', 'error');
-  }
-  
-  const selection = window.getSelection();
-  if (!selection.rangeCount || selection.toString().trim() === '') {
-    return showNotification('Veuillez sélectionner du texte à transformer en liste', 'error');
-  }
-  
-  try {
-    const range = selection.getRangeAt(0);
-    
-    // Vérifier que la sélection est dans un élément éditable
-    const container = range.commonAncestorContainer;
-    const editableParent = container.nodeType === 3 ? container.parentElement : container;
-    
-    if (!editableParent.classList.contains('editable') && 
-        !editableParent.closest('.editable') &&
-        !editableParent.closest('.accordion-content')) {
-      return showNotification('La sélection doit être dans un élément éditable', 'error');
-    }
-    
-    // Créer une liste à puces sans attributs superflus
-    const ul = document.createElement('ul');
-    
-    // Extraire le contenu sélectionné
-    const fragment = range.extractContents();
-    const textContent = fragment.textContent.trim();
-    
-    // Diviser le texte en éléments de liste
-    // Priorité: sauts de ligne, puis points, puis virgules si nécessaire
-    let items = [];
-    
-    if (textContent.includes('\n')) {
-      items = textContent.split('\n');
-    } else if (textContent.includes('.')) {
-      items = textContent.split('.');
-    } else if (textContent.includes(',')) {
-      items = textContent.split(',');
-    } else {
-      items = [textContent]; // Un seul élément si pas de délimiteur
-    }
-    
-    // Ajouter chaque élément comme élément de liste
-    items.forEach(item => {
-      const trimmedItem = item.trim();
-      if (trimmedItem) {
-        const li = document.createElement('li');
-        li.textContent = trimmedItem;
-        li.classList.add('editable');
-        li.contentEditable = true;
-        li.addEventListener('click', handleEditClick);
-        editableElements.add(li);
-        ul.appendChild(li);
+     * Corrections pour l'éditeur d'accordéon WordPress
+     * 
+     * Ce script contient les fonctions corrigées pour résoudre les problèmes
+     * de manipulation des listes à puces dans l'éditeur d'accordéon.
+     */
+    // 1. SIMPLIFICATION DE LA BARRE D'OUTILS
+    // Cette modification supprime le bouton de liste redondant 
+    // et conserve uniquement l'option dans le menu déroulant
+    document.addEventListener('DOMContentLoaded', function() {
+      // Supprimer le bouton de liste redondant
+      const listBtn = document.getElementById('listBtn');
+      if (listBtn) {
+        listBtn.style.display = 'none';
+      }
+      // Si besoin, aussi dissimuler les boutons associés aux listes
+      // qui ne sont pas nécessaires en accès rapide
+      const addItemBtn = document.getElementById('addItemBtn');
+      const removeItemBtn = document.getElementById('removeItemBtn');
+      if (addItemBtn && removeItemBtn) {
+        addItemBtn.style.display = 'none';
+        removeItemBtn.style.display = 'none';
       }
     });
-    
-    // N'insérer la liste que si elle contient des éléments
-    if (ul.children.length > 0) {
-      range.insertNode(ul);
-      
-      // Nettoyer la sélection
-      selection.removeAllRanges();
-      
+    // 2. CORRECTION DE LA FONCTION D'AJOUT DE LISTE
+    // Cette version corrigée assure que la liste est correctement insérée 
+    // dans le contenu de l'accordéon et que le DOM temporaire est mis à jour
+    function addList() {
+      if (!isEditMode || !currentEditingElement) {
+        return showNotification('Veuillez sélectionner un élément éditable', 'error');
+      }
+      // Trouver le conteneur approprié pour ajouter la liste
+      let container = currentEditingElement;
+      // Si l'élément actuel n'est pas dans le contenu de l'accordéon,
+      // rechercher le conteneur de contenu d'accordéon le plus proche
+      if (!container.closest('.accordion-content')) {
+        container = container.closest('.accordion-item')?.querySelector('.accordion-content');
+        if (!container) {
+          return showNotification('Impossible de trouver un conteneur valide pour la liste', 'error');
+        }
+      }
+      // Créer une liste à puces avec un élément initial
+      const ul = document.createElement('ul');
+      ul.className = 'editable-list'; // Classe pour identifier facilement les listes éditables
+      // Créer le premier élément de liste
+      const li = document.createElement('li');
+      li.textContent = 'Nouvel élément';
+      li.classList.add('editable');
+      li.contentEditable = true;
+      ul.appendChild(li);
+      // Insérer la liste après l'élément actuel ou à la fin du contenu de l'accordéon
+      if (container.classList.contains('accordion-content')) {
+        // Ajouter à la fin du conteneur de contenu
+        container.appendChild(ul);
+      } else {
+        // Insérer après l'élément sélectionné
+        container.insertAdjacentElement('afterend', ul);
+      }
+      // Rendre tous les éléments de liste éditables
+      li.addEventListener('click', handleEditClick);
+      editableElements.add(li);
+      // Sélectionner le nouvel élément
+      if (currentEditingElement) {
+        currentEditingElement.classList.remove('edit-focus');
+      }
+      currentEditingElement = li;
+      li.classList.add('edit-focus');
+      li.focus();
       // Mettre à jour le DOM temporaire
       updateTempDOM();
-      
       // Marquer comme modification WYSIWYG
       lastModifiedSource = 'wysiwyg';
       pendingChanges = true;
-      
-      showNotification('Texte converti en liste à puces');
-    } else {
-      showNotification('Impossible de créer une liste vide', 'error');
+      showNotification('Liste à puces ajoutée');
     }
-  } catch (error) {
-    console.error('Erreur lors de la conversion en liste:', error);
-    showNotification('Erreur lors de la conversion en liste', 'error');
-  }
-}
-
-// 5. CORRECTION DE LA FONCTION DE SUPPRESSION D'ÉLÉMENT DE LISTE
-// Cette version corrigée gère correctement la suppression d'un élément 
-// et la mise à jour du DOM temporaire
-
-function removeListItem() {
-  if (!isEditMode || !currentEditingElement) {
-    return showNotification('Veuillez sélectionner un élément de liste', 'error');
-  }
-  
-  // Vérifier si l'élément actuel est un élément de liste ou contient un élément de liste
-  const li = currentEditingElement.nodeName === 'LI' 
-    ? currentEditingElement 
-    : currentEditingElement.closest('li');
-    
-  if (!li) {
-    return showNotification('Veuillez sélectionner un élément de liste', 'error');
-  }
-  
-  const ul = li.closest('ul, ol');
-  if (!ul) return;
-  
-  // Supprimer l'élément de la liste des éléments éditables
-  editableElements.delete(li);
-  
-  // Supprimer les gestionnaires d'événements
-  li.removeEventListener('click', handleEditClick);
-  
-  // Vérifier s'il s'agit du dernier élément de la liste
-  const isLastItem = ul.children.length === 1;
-  
-  // Supprimer l'élément du DOM
-  li.remove();
-  
-  // Si c'était le dernier élément, supprimer la liste
-  if (isLastItem) {
-    ul.remove();
-    showNotification('Liste supprimée car vide');
-  } else {
-    showNotification('Élément de liste supprimé');
-  }
-  
-  // Réinitialiser l'élément actuel
-  currentEditingElement = null;
-  
-  // Mettre à jour le DOM temporaire
-  updateTempDOM();
-  
-  // Marquer comme modification WYSIWYG
-  lastModifiedSource = 'wysiwyg';
-  pendingChanges = true;
-}
-
-// 6. AMÉLIORATION DE LA FONCTION DE GESTION DES ÉVÉNEMENTS DE LA BARRE D'OUTILS
-// Cette fonction remplace les gestionnaires d'événements existants pour les boutons de liste
-
-function setupToolbarListHandlers() {
-  // Supprimer les gestionnaires existants
-  const listBtn = document.getElementById('listBtn');
-  const addItemBtn = document.getElementById('addItemBtn');
-  const removeItemBtn = document.getElementById('removeItemBtn');
-  
-  if (listBtn) {
-    // Clone le bouton pour supprimer tous les écouteurs d'événements
-    const newListBtn = listBtn.cloneNode(true);
-    listBtn.parentNode.replaceChild(newListBtn, listBtn);
-    
-    // Ajouter un nouveau gestionnaire unifié
-    newListBtn.addEventListener('click', function() {
-      const selection = window.getSelection();
-      if (selection.toString().trim()) {
-        convertTextToList();
+    // 3. CORRECTION DE LA FONCTION D'AJOUT D'ÉLÉMENT DE LISTE
+    // Cette version corrigée assure que les nouveaux éléments sont correctement
+    // intégrés à la liste existante
+    function addItemToList() {
+      if (!isEditMode || !currentEditingElement) {
+        return showNotification('Veuillez sélectionner un élément de liste', 'error');
+      }
+      // Vérifier si l'élément actuel est une liste ou un élément de liste
+      let li = null;
+      let ul = null;
+      if (currentEditingElement.nodeName === 'LI') {
+        // Si l'élément actuel est déjà un élément de liste
+        li = currentEditingElement;
+        ul = li.parentElement;
+      } else if (currentEditingElement.closest('li')) {
+        // Si l'élément actuel est à l'intérieur d'un élément de liste
+        li = currentEditingElement.closest('li');
+        ul = li.parentElement;
+      } else if (currentEditingElement.nodeName === 'UL' || currentEditingElement.nodeName === 'OL') {
+        // Si l'élément actuel est la liste elle-même
+        ul = currentEditingElement;
+        li = ul.lastElementChild; // Ajouter après le dernier élément
       } else {
-        addList();
+        return showNotification('Veuillez sélectionner un élément de liste', 'error');
       }
-    });
-  }
-  
-  if (addItemBtn) {
-    const newAddItemBtn = addItemBtn.cloneNode(true);
-    addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
-    newAddItemBtn.addEventListener('click', addItemToList);
-  }
-  
-  if (removeItemBtn) {
-    const newRemoveItemBtn = removeItemBtn.cloneNode(true);
-    removeItemBtn.parentNode.replaceChild(newRemoveItemBtn, removeItemBtn);
-    newRemoveItemBtn.addEventListener('click', removeListItem);
-  }
-}
-
-// 7. AMÉLIORATION DE LA FONCTION UPDATETEMPDOM
-// Cette version corrigée assure une meilleure gestion des listes
-
-function updateTempDOM() {
-  if (!tempDOM) tempDOM = document.createElement('div');
-  
-  // Récupérer le contenu complet de la prévisualisation
-  tempDOM.innerHTML = previewAreaElem.innerHTML;
-  
-  // Nettoyer les attributs spécifiques à l'éditeur
-  const elementsToClean = tempDOM.querySelectorAll('[contenteditable], .editable, .edit-focus, .editable-list');
-  elementsToClean.forEach(el => {
-    el.removeAttribute('contenteditable');
-    el.classList.remove('editable', 'edit-focus', 'editable-list');
-    
-    // Supprimer complètement l'attribut class s'il est vide
-    if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
-      el.removeAttribute('class');
-    }
-  });
-  
-  // S'assurer que les liens restent cliquables mais sans attributs inutiles
-  const links = tempDOM.querySelectorAll('a');
-  links.forEach(link => {
-    if (link.hasAttribute('class') && !link.getAttribute('class').trim()) {
-      link.removeAttribute('class');
-    }
-    if (!link.hasAttribute('target') || link.getAttribute('target') === '_self') {
-      link.removeAttribute('target');
-    }
-  });
-  
-  // Fusionner et nettoyer les listes
-  tempDOM.innerHTML = cleanupMultipleLists(tempDOM.innerHTML);
-  tempDOM.innerHTML = cleanupListsHTML(tempDOM.innerHTML);
-}
-
-// 8. AMÉLIORATION DE LA FONCTION CLEANUPLISTSHTML
-// Cette version corrigée assure une meilleure gestion des listes imbriquées
-
-function cleanupListsHTML(html) {
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  
-  // Nettoyer les listes et éléments de liste
-  const lists = tempDiv.querySelectorAll('ul, ol');
-  lists.forEach(list => {
-    // Supprimer les attributs inutiles des listes
-    Array.from(list.attributes).forEach(attr => {
-      if (attr.name !== 'style' && attr.name !== 'class') {
-        list.removeAttribute(attr.name);
+      if (!ul) return;
+      // Créer un nouvel élément de liste
+      const newLi = document.createElement('li');
+      newLi.textContent = 'Nouvel élément';
+      // Insérer le nouvel élément après l'élément sélectionné ou à la fin
+      if (li && li.nextSibling) {
+        ul.insertBefore(newLi, li.nextSibling);
+      } else {
+        ul.appendChild(newLi);
       }
-    });
-    
-    // Nettoyer chaque élément de liste
-    list.querySelectorAll('li').forEach(li => {
-      // Supprimer tous les attributs sauf style et class
-      Array.from(li.attributes).forEach(attr => {
-        if (attr.name !== 'style' && attr.name !== 'class') {
-          li.removeAttribute(attr.name);
-        }
-      });
-      
-      // Supprimer les spans vides ou inutiles
-      li.querySelectorAll('span:not([style])').forEach(span => {
-        if (!span.attributes.length || 
-            (span.attributes.length === 1 && span.hasAttribute('class') && !span.getAttribute('class'))) {
-          // Conserver le texte mais supprimer le span
-          const textContent = span.textContent;
-          const textNode = document.createTextNode(textContent);
-          span.parentNode.replaceChild(textNode, span);
-        }
-      });
-      
-      // S'assurer que les listes imbriquées sont correctement structurées
-      const nestedLists = li.querySelectorAll('ul, ol');
-      nestedLists.forEach(nestedList => {
-        // S'assurer que la liste imbriquée est un enfant direct de l'élément li
-        if (nestedList.parentNode !== li) {
-          // Déplacer la liste imbriquée pour qu'elle soit un enfant direct de li
-          li.appendChild(nestedList);
-        }
-      });
-    });
-  });
-  
-  return tempDiv.innerHTML;
-}
-
-// 9. FONCTION D'INITIALISATION POUR APPLIQUER LES CORRECTIFS
-// Cette fonction doit être appelée au chargement de la page
-
-function applyListFunctionCorrections() {
-  // Attendre que le DOM soit complètement chargé
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCorrections);
-  } else {
-    initializeCorrections();
-  }
-  
-  function initializeCorrections() {
-    // Supprimer le bouton de liste redondant
-    const listBtn = document.getElementById('listBtn');
-    if (listBtn) {
-      listBtn.style.display = 'none';
+      // Rendre le nouvel élément éditable
+      newLi.classList.add('editable');
+      newLi.contentEditable = true;
+      newLi.addEventListener('click', handleEditClick);
+      editableElements.add(newLi);
+      // Sélectionner le nouvel élément
+      if (currentEditingElement) {
+        currentEditingElement.classList.remove('edit-focus');
+      }
+      currentEditingElement = newLi;
+      newLi.classList.add('edit-focus');
+      newLi.focus();
+      // Mettre à jour le DOM temporaire
+      updateTempDOM();
+      // Marquer comme modification WYSIWYG
+      lastModifiedSource = 'wysiwyg';
+      pendingChanges = true;
+      showNotification('Élément ajouté à la liste');
     }
-    
-    // Configurer les nouveaux gestionnaires d'événements
-    setupToolbarListHandlers();
-    
-    // Corriger les références aux fonctions modifiées
-    if (typeof attachEditFunctionUpdates === 'function') {
-      attachEditFunctionUpdates();
+    // 4. CORRECTION DE LA FONCTION CONVERTISSANT LE TEXTE EN LISTE
+    // Cette version corrigée assure que le texte sélectionné est correctement
+    // transformé en liste à puces
+    function convertTextToList() {
+      if (!isEditMode) {
+        return showNotification('Veuillez activer le mode édition', 'error');
+      }
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.toString().trim() === '') {
+        return showNotification('Veuillez sélectionner du texte à transformer en liste', 'error');
+      }
+      try {
+        const range = selection.getRangeAt(0);
+        // Vérifier que la sélection est dans un élément éditable
+        const container = range.commonAncestorContainer;
+        const editableParent = container.nodeType === 3 ? container.parentElement : container;
+        if (!editableParent.classList.contains('editable') &&
+          !editableParent.closest('.editable') &&
+          !editableParent.closest('.accordion-content')) {
+          return showNotification('La sélection doit être dans un élément éditable', 'error');
+        }
+        // Créer une liste à puces sans attributs superflus
+        const ul = document.createElement('ul');
+        // Extraire le contenu sélectionné
+        const fragment = range.extractContents();
+        const textContent = fragment.textContent.trim();
+        // Diviser le texte en éléments de liste
+        // Priorité: sauts de ligne, puis points, puis virgules si nécessaire
+        let items = [];
+        if (textContent.includes('\n')) {
+          items = textContent.split('\n');
+        } else if (textContent.includes('.')) {
+          items = textContent.split('.');
+        } else if (textContent.includes(',')) {
+          items = textContent.split(',');
+        } else {
+          items = [textContent]; // Un seul élément si pas de délimiteur
+        }
+        // Ajouter chaque élément comme élément de liste
+        items.forEach(item => {
+          const trimmedItem = item.trim();
+          if (trimmedItem) {
+            const li = document.createElement('li');
+            li.textContent = trimmedItem;
+            li.classList.add('editable');
+            li.contentEditable = true;
+            li.addEventListener('click', handleEditClick);
+            editableElements.add(li);
+            ul.appendChild(li);
+          }
+        });
+        // N'insérer la liste que si elle contient des éléments
+        if (ul.children.length > 0) {
+          range.insertNode(ul);
+          // Nettoyer la sélection
+          selection.removeAllRanges();
+          // Mettre à jour le DOM temporaire
+          updateTempDOM();
+          // Marquer comme modification WYSIWYG
+          lastModifiedSource = 'wysiwyg';
+          pendingChanges = true;
+          showNotification('Texte converti en liste à puces');
+        } else {
+          showNotification('Impossible de créer une liste vide', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la conversion en liste:', error);
+        showNotification('Erreur lors de la conversion en liste', 'error');
+      }
     }
-    
-    console.log('Corrections des fonctionnalités de liste appliquées');
-  }
-}
+    // 5. CORRECTION DE LA FONCTION DE SUPPRESSION D'ÉLÉMENT DE LISTE
+    // Cette version corrigée gère correctement la suppression d'un élément 
+    // et la mise à jour du DOM temporaire
+    function removeListItem() {
+      if (!isEditMode || !currentEditingElement) {
+        return showNotification('Veuillez sélectionner un élément de liste', 'error');
+      }
+      // Vérifier si l'élément actuel est un élément de liste ou contient un élément de liste
+      const li = currentEditingElement.nodeName === 'LI' ?
+        currentEditingElement :
+        currentEditingElement.closest('li');
+      if (!li) {
+        return showNotification('Veuillez sélectionner un élément de liste', 'error');
+      }
+      const ul = li.closest('ul, ol');
+      if (!ul) return;
+      // Supprimer l'élément de la liste des éléments éditables
+      editableElements.delete(li);
+      // Supprimer les gestionnaires d'événements
+      li.removeEventListener('click', handleEditClick);
+      // Vérifier s'il s'agit du dernier élément de la liste
+      const isLastItem = ul.children.length === 1;
+      // Supprimer l'élément du DOM
+      li.remove();
+      // Si c'était le dernier élément, supprimer la liste
+      if (isLastItem) {
+        ul.remove();
+        showNotification('Liste supprimée car vide');
+      } else {
+        showNotification('Élément de liste supprimé');
+      }
+      // Réinitialiser l'élément actuel
+      currentEditingElement = null;
+      // Mettre à jour le DOM temporaire
+      updateTempDOM();
+      // Marquer comme modification WYSIWYG
+      lastModifiedSource = 'wysiwyg';
+      pendingChanges = true;
+    }
+    // 6. AMÉLIORATION DE LA FONCTION DE GESTION DES ÉVÉNEMENTS DE LA BARRE D'OUTILS
+    // Cette fonction remplace les gestionnaires d'événements existants pour les boutons de liste
+    function setupToolbarListHandlers() {
+      // Supprimer les gestionnaires existants
+      const listBtn = document.getElementById('listBtn');
+      const addItemBtn = document.getElementById('addItemBtn');
+      const removeItemBtn = document.getElementById('removeItemBtn');
+      if (listBtn) {
+        // Clone le bouton pour supprimer tous les écouteurs d'événements
+        const newListBtn = listBtn.cloneNode(true);
+        listBtn.parentNode.replaceChild(newListBtn, listBtn);
+        // Ajouter un nouveau gestionnaire unifié
+        newListBtn.addEventListener('click', function() {
+          const selection = window.getSelection();
+          if (selection.toString().trim()) {
+            convertTextToList();
+          } else {
+            addList();
+          }
+        });
+      }
+      if (addItemBtn) {
+        const newAddItemBtn = addItemBtn.cloneNode(true);
+        addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
+        newAddItemBtn.addEventListener('click', addItemToList);
+      }
+      if (removeItemBtn) {
+        const newRemoveItemBtn = removeItemBtn.cloneNode(true);
+        removeItemBtn.parentNode.replaceChild(newRemoveItemBtn, removeItemBtn);
+        newRemoveItemBtn.addEventListener('click', removeListItem);
+      }
+    }
+    // 7. AMÉLIORATION DE LA FONCTION UPDATETEMPDOM
+    // Cette version corrigée assure une meilleure gestion des listes
+    function updateTempDOM() {
+      if (!tempDOM) tempDOM = document.createElement('div');
+      // Récupérer le contenu complet de la prévisualisation
+      tempDOM.innerHTML = previewAreaElem.innerHTML;
+      // Nettoyer les attributs spécifiques à l'éditeur
+      const elementsToClean = tempDOM.querySelectorAll('[contenteditable], .editable, .edit-focus, .editable-list');
+      elementsToClean.forEach(el => {
+        el.removeAttribute('contenteditable');
+        el.classList.remove('editable', 'edit-focus', 'editable-list');
+        // Supprimer complètement l'attribut class s'il est vide
+        if (el.hasAttribute('class') && !el.getAttribute('class').trim()) {
+          el.removeAttribute('class');
+        }
+      });
+      // S'assurer que les liens restent cliquables mais sans attributs inutiles
+      const links = tempDOM.querySelectorAll('a');
+      links.forEach(link => {
+        if (link.hasAttribute('class') && !link.getAttribute('class').trim()) {
+          link.removeAttribute('class');
+        }
+        if (!link.hasAttribute('target') || link.getAttribute('target') === '_self') {
+          link.removeAttribute('target');
+        }
+      });
+      // Fusionner et nettoyer les listes
+      tempDOM.innerHTML = cleanupMultipleLists(tempDOM.innerHTML);
+      tempDOM.innerHTML = cleanupListsHTML(tempDOM.innerHTML);
+    }
+    // 8. AMÉLIORATION DE LA FONCTION CLEANUPLISTSHTML
+    // Cette version corrigée assure une meilleure gestion des listes imbriquées
+    function cleanupListsHTML(html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      // Nettoyer les listes et éléments de liste
+      const lists = tempDiv.querySelectorAll('ul, ol');
+      lists.forEach(list => {
+        // Supprimer les attributs inutiles des listes
+        Array.from(list.attributes).forEach(attr => {
+          if (attr.name !== 'style' && attr.name !== 'class') {
+            list.removeAttribute(attr.name);
+          }
+        });
+        // Nettoyer chaque élément de liste
+        list.querySelectorAll('li').forEach(li => {
+          // Supprimer tous les attributs sauf style et class
+          Array.from(li.attributes).forEach(attr => {
+            if (attr.name !== 'style' && attr.name !== 'class') {
+              li.removeAttribute(attr.name);
+            }
+          });
+          // Supprimer les spans vides ou inutiles
+          li.querySelectorAll('span:not([style])').forEach(span => {
+            if (!span.attributes.length ||
+              (span.attributes.length === 1 && span.hasAttribute('class') && !span.getAttribute('class'))) {
+              // Conserver le texte mais supprimer le span
+              const textContent = span.textContent;
+              const textNode = document.createTextNode(textContent);
+              span.parentNode.replaceChild(textNode, span);
+            }
+          });
+          // S'assurer que les listes imbriquées sont correctement structurées
+          const nestedLists = li.querySelectorAll('ul, ol');
+          nestedLists.forEach(nestedList => {
+            // S'assurer que la liste imbriquée est un enfant direct de l'élément li
+            if (nestedList.parentNode !== li) {
+              // Déplacer la liste imbriquée pour qu'elle soit un enfant direct de li
+              li.appendChild(nestedList);
+            }
+          });
+        });
+      });
+      return tempDiv.innerHTML;
+    }
+    // 9. FONCTION D'INITIALISATION POUR APPLIQUER LES CORRECTIFS
+    // Cette fonction doit être appelée au chargement de la page
+    function applyListFunctionCorrections() {
+      // Attendre que le DOM soit complètement chargé
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeCorrections);
+      } else {
+        initializeCorrections();
+      }
 
-// Appliquer les correctifs
-applyListFunctionCorrections();
+      function initializeCorrections() {
+        // Supprimer le bouton de liste redondant
+        const listBtn = document.getElementById('listBtn');
+        if (listBtn) {
+          listBtn.style.display = 'none';
+        }
+        // Configurer les nouveaux gestionnaires d'événements
+        setupToolbarListHandlers();
+        // Corriger les références aux fonctions modifiées
+        if (typeof attachEditFunctionUpdates === 'function') {
+          attachEditFunctionUpdates();
+        }
+        console.log('Corrections des fonctionnalités de liste appliquées');
+      }
+    }
+    // Appliquer les correctifs
+    applyListFunctionCorrections();
+    // Fonction pour ajuster la hauteur des panneaux de manière synchronisée
+    function synchronizePanelsHeight() {
+      // Sélectionner les éléments concernés
+      const sourceContainer = document.querySelector('.source-container');
+      const previewContainer = document.querySelector('.preview-container');
+      const sourceBody = document.querySelector('.source-container .container-body');
+      const previewBody = document.querySelector('.preview-container .container-body');
+      const sourceCode = document.getElementById('sourceCode');
+      if (!sourceContainer || !previewContainer || !sourceBody || !previewBody || !sourceCode) {
+        console.error('Éléments requis non trouvés');
+        return;
+      }
+      // Calculer la hauteur disponible dans la fenêtre
+      const windowHeight = window.innerHeight;
+      const containerTop = sourceContainer.getBoundingClientRect().top;
+      const footerHeight = document.querySelector('.footer')?.offsetHeight || 0;
+      const actionsBarHeight = document.querySelector('.actions-bar')?.offsetHeight || 0;
+      const padding = 40; // Marge supplémentaire
+      // Calculer la hauteur maximale disponible
+      const availableHeight = windowHeight - containerTop - footerHeight - actionsBarHeight - padding;
+      // Définir une hauteur minimale raisonnable
+      const minHeight = 500;
+      const newHeight = Math.max(minHeight, availableHeight);
+      // Appliquer la même hauteur aux deux panneaux
+      sourceBody.style.height = `${newHeight}px`;
+      previewBody.style.height = `${newHeight}px`;
+      sourceCode.style.height = `${newHeight - 30}px`; // Soustraire la hauteur de l'en-tête
+      // Si CodeMirror est actif, ajuster sa hauteur également
+      if (window.cmEditor) {
+        window.cmEditor.setSize(null, newHeight - 30);
+      }
+      // S'assurer que les scrollbars apparaissent correctement
+      sourceBody.style.overflow = 'auto';
+      previewBody.style.overflow = 'auto';
+    }
+    // Exécuter la fonction au chargement et lors du redimensionnement
+    window.addEventListener('load', synchronizePanelsHeight);
+    window.addEventListener('resize', synchronizePanelsHeight);
+    // Appliquer également après un court délai pour s'assurer que tout est chargé
+    setTimeout(synchronizePanelsHeight, 500);
+    setTimeout(synchronizePanelsHeight, 1000);
   </script>
 </body>
 
