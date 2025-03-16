@@ -256,12 +256,73 @@
       background-color: var(--red-warning);
     }
 
+   
     /* Accordéon Styles */
     .accordion-item {
       margin-bottom: 15px;
       border: 1px solid var(--border-color);
       border-radius: 5px;
       overflow: hidden;
+    }
+
+    /* Styles de base améliorés pour les accordéons */
+    .accordion-item .accordion-header {
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      will-change: transform;
+    }
+
+    .accordion-item .accordion-content {
+      transform-origin: top;
+      animation: smoothAccordionOpen 1s cubic-bezier(0.16, 1, 0.3, 1);
+      /* Durée à 1s avec une courbe d'accélération différente */
+      overflow: hidden;
+      will-change: transform, opacity;
+    }
+
+    @keyframes smoothAccordionOpen {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 2000px;
+        /* Valeur suffisamment grande */
+      }
+    }
+
+    /* Animation de fermeture (optionnelle) */
+    .accordion-item.closing .accordion-content {
+      animation: smoothAccordionClose 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+
+    @keyframes smoothAccordionClose {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 2000px;
+      }
+
+      to {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+      }
+    }
+
+    /* Animation améliorée pour l'icône de flèche */
+    .accordion-item .accordion-header::after {
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      /* Effet légèrement élastique */
+    }
+
+    .accordion-item.active .accordion-header::after {
+      transform: translateY(-50%) rotate(45deg);
     }
 
     .accordion-header {
@@ -312,6 +373,81 @@
       margin-top: 10px;
     }
 
+    .accordion {
+      font-family: Arial, sans-serif;
+    }
+
+    .accordion-item {
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .accordion-header img {
+      width: auto;
+      height: 64px;
+      flex-shrink: 0;
+    }
+
+    .accordion-header span {
+      flex-grow: 1;
+      white-space: normal;
+      overflow: hidden;
+      word-wrap: break-word;
+      text-align: left;
+    }
+
+    .accordion-header:after {
+      content: "";
+      height: 20px;
+      width: 20px;
+      background-image: url(https://parcdesbauges.com/wp-content/themes/generatepress_child/svg/arrow.svg);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      display: inline-block;
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-45deg);
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .accordion-item.active .accordion-header:after {
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .accordion-content {
+      display: none;
+      overflow: hidden;
+      padding: 15px;
+      border-radius: 0 0 5px 5px;
+    }
+
+    /* Sous-accordéons */
+    .sub-accordion {
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      background-color: #fff !important;
+      margin-bottom: 10px;
+    }
+
+    .sub-accordion .accordion-header {
+      background-color: #fff !important;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sub-accordion .accordion-header img {
+      width: auto;
+      height: 40px;
+      flex-shrink: 0;
+    }
+
+    .sub-accordion .accordion-content {
+      background-color: #fff !important;
+    }
     /* Toggle Switch */
     .switch-wrapper {
       display: flex;
